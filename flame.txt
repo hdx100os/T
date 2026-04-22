@@ -1,0 +1,499 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local camera = workspace.CurrentCamera
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomUI"
+screenGui.Parent = playerGui
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 40, 0, 40)
+button.Position = UDim2.new(0.05, 0, 0.2, 0)
+button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+button.Text = "A"
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.TextScaled = true
+button.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 15)
+corner.Parent = button
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(128, 128, 128)
+stroke.Thickness = 2
+stroke.Parent = button
+
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	button.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+button.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 280, 0, 0)
+menu.Position = UDim2.new(0.5, -140, 0.5, -200)
+menu.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+menu.Visible = false
+menu.ClipsDescendants = true
+menu.Parent = screenGui
+
+local menuStroke = Instance.new("UIStroke")
+menuStroke.Color = Color3.fromRGB(128, 128, 128)
+menuStroke.Thickness = 2
+menuStroke.Parent = menu
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 10)
+menuCorner.Parent = menu
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 35)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+titleLabel.Text = "AimBot Script"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextScaled = true
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Parent = menu
+
+local separator = Instance.new("Frame")
+separator.Size = UDim2.new(1, 0, 0, 1)
+separator.Position = UDim2.new(0, 0, 0, 35)
+separator.BackgroundColor3 = Color3.fromRGB(128, 128, 128)
+separator.BorderSizePixel = 0
+separator.Parent = menu
+
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, 0, 1, -35)
+scrollFrame.Position = UDim2.new(0, 0, 0, 35)
+scrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+scrollFrame.ScrollBarThickness = 8
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+scrollFrame.BorderSizePixel = 0
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.Parent = menu
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 10)
+layout.Parent = scrollFrame
+
+local function updateCanvasSize()
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+		local newMenuSize = math.min(400, layout.AbsoluteContentSize.Y + 55)
+		menu.Size = UDim2.new(0, 280, 0, newMenuSize)
+	end)
+end
+
+updateCanvasSize()
+
+local function createToggleButton(text, description)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, -20, 0, 50)
+	container.Position = UDim2.new(0, 10, 0, 0)
+	container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	container.Parent = scrollFrame
+
+	local containerStroke = Instance.new("UIStroke")
+	containerStroke.Color = Color3.fromRGB(128, 128, 128)
+	containerStroke.Thickness = 1
+	containerStroke.Parent = container
+
+	local containerCorner = Instance.new("UICorner")
+	containerCorner.CornerRadius = UDim.new(0, 6)
+	containerCorner.Parent = container
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(0.7, 0, 1, 0)
+	textLabel.Position = UDim2.new(0, 10, 0, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = text .. "\n" .. description
+	textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	textLabel.TextScaled = true
+	textLabel.TextWrapped = true
+	textLabel.Font = Enum.Font.Gotham
+	textLabel.Parent = container
+
+	local toggle = Instance.new("Frame")
+	toggle.Size = UDim2.new(0, 35, 0, 20)
+	toggle.Position = UDim2.new(0.7, 0, 0.5, -10)
+	toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	toggle.Parent = container
+
+	local toggleCorner = Instance.new("UICorner")
+	toggleCorner.CornerRadius = UDim.new(0, 10)
+	toggleCorner.Parent = toggle
+
+	local toggleButton = Instance.new("Frame")
+	toggleButton.Size = UDim2.new(0, 15, 0, 15)
+	toggleButton.Position = UDim2.new(0, 2, 0.5, -7.5)
+	toggleButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+	toggleButton.Parent = toggle
+
+	local toggleCornerBtn = Instance.new("UICorner")
+	toggleCornerBtn.CornerRadius = UDim.new(0, 7)
+	toggleCornerBtn.Parent = toggleButton
+
+	local toggled = false
+
+	local function toggleState()
+		toggled = not toggled
+		if toggled then
+			toggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+			toggleButton.Position = UDim2.new(0, 18, 0.5, -7.5)
+		else
+			toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+			toggleButton.Position = UDim2.new(0, 2, 0.5, -7.5)
+		end
+		return toggled
+	end
+
+	local clickDetector = Instance.new("TextButton")
+	clickDetector.Size = UDim2.new(0, 35, 0, 20)
+	clickDetector.Position = UDim2.new(0.7, 0, 0.5, -10)
+	clickDetector.BackgroundTransparency = 1
+	clickDetector.Text = ""
+	clickDetector.Parent = container
+
+	clickDetector.MouseButton1Click:Connect(function()
+		toggleState()
+	end)
+
+	return container, toggleState
+
+end
+
+local function createPlayerSelector(text, description)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, -20, 0, 50)
+	container.Position = UDim2.new(0, 10, 0, 0)
+	container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	container.Parent = scrollFrame
+
+	local containerStroke = Instance.new("UIStroke")
+	containerStroke.Color = Color3.fromRGB(128, 128, 128)
+	containerStroke.Thickness = 1
+	containerStroke.Parent = container
+
+	local containerCorner = Instance.new("UICorner")
+	containerCorner.CornerRadius = UDim.new(0, 6)
+	containerCorner.Parent = container
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(0.6, -10, 1, 0)
+	textLabel.Position = UDim2.new(0, 10, 0, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = text
+	textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	textLabel.TextScaled = true
+	textLabel.TextWrapped = false
+	textLabel.Font = Enum.Font.Gotham
+	textLabel.Parent = container
+
+	local selectorBox = Instance.new("Frame")
+	selectorBox.Size = UDim2.new(0.35, 0, 1, 0)
+	selectorBox.Position = UDim2.new(0.65, 0, 0, 0)
+	selectorBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	selectorBox.Parent = container
+
+	local selectorBoxStroke = Instance.new("UIStroke")
+	selectorBoxStroke.Color = Color3.fromRGB(128, 128, 128)
+	selectorBoxStroke.Thickness = 1
+	selectorBoxStroke.Parent = selectorBox
+
+	local searchInput = Instance.new("TextBox")
+	searchInput.Size = UDim2.new(1, -40, 1, 0)
+	searchInput.Position = UDim2.new(0, 5, 0, 0)
+	searchInput.BackgroundTransparency = 1
+	searchInput.Text = ""
+	searchInput.PlaceholderText = "Search"
+	searchInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+	searchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+	searchInput.TextScaled = true
+	searchInput.Font = Enum.Font.Gotham
+	searchInput.Parent = selectorBox
+
+	local expandButton = Instance.new("TextButton")
+	expandButton.Size = UDim2.new(0, 30, 1, 0)
+	expandButton.Position = UDim2.new(1, -30, 0, 0)
+	expandButton.BackgroundTransparency = 1
+	expandButton.Text = "→"
+	expandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	expandButton.TextScaled = true
+	expandButton.Font = Enum.Font.GothamBold
+	expandButton.Parent = selectorBox
+
+	local listFrame = Instance.new("Frame")
+	listFrame.Size = UDim2.new(0, 0, 0, 0)
+	listFrame.Visible = false
+	listFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	listFrame.Parent = container
+	listFrame.ClipsDescendants = true
+
+	local listStroke = Instance.new("UIStroke")
+	listStroke.Color = Color3.fromRGB(128, 128, 128)
+	listStroke.Thickness = 1
+	listStroke.Parent = listFrame
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 5)
+	listLayout.Parent = listFrame
+
+	local expanded = false
+	local selectedPlayer = nil
+
+	local function toggleList()
+		expanded = not expanded
+		if expanded then
+			expandButton.Text = "↓"
+			listFrame.Visible = true
+			menu.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+			menu.Size = UDim2.new(0, 280, 0, math.min(400, layout.AbsoluteContentSize.Y + 200))
+		else
+			expandButton.Text = "→"
+			listFrame.Visible = false
+		end
+	end
+
+	expandButton.MouseButton1Click:Connect(function()
+		toggleList()
+	end)
+
+	local function refreshList(filterText)
+		listFrame:ClearAllChildren()
+		listLayout = Instance.new("UIListLayout")
+		listLayout.Padding = UDim.new(0, 5)
+		listLayout.Parent = listFrame
+
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= player then
+				if filterText == "" or string.find(plr.Name:lower(), filterText:lower()) then
+					local playerBtn = Instance.new("TextButton")
+					playerBtn.Size = UDim2.new(1, -10, 0, 30)
+					playerBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+					playerBtn.Text = plr.Name
+					playerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+					playerBtn.TextScaled = true
+					playerBtn.Font = Enum.Font.Gotham
+					playerBtn.Parent = listFrame
+
+					local btnCorner = Instance.new("UICorner")
+					btnCorner.CornerRadius = UDim.new(0, 5)
+					btnCorner.Parent = playerBtn
+
+					playerBtn.MouseButton1Click:Connect(function()
+						selectedPlayer = plr
+						searchInput.Text = plr.Name
+						toggleList()
+					end)
+				end
+			end
+		end
+
+		listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			listFrame.Size = UDim2.new(0.35, 0, 0, math.min(150, listLayout.AbsoluteContentSize.Y + 10))
+		end)
+	end
+
+	searchInput.Changed:Connect(function()
+		refreshList(searchInput.Text)
+	end)
+
+	searchInput.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr.Name:lower() == searchInput.Text:lower() then
+					selectedPlayer = plr
+					break
+				end
+			end
+		end
+	end)
+
+	local function getSelectedPlayer()
+		return selectedPlayer
+	end
+
+	return container, getSelectedPlayer
+end
+
+local auraContainer, getAuraState = createToggleButton("ESP/Aura", "Highlight all players")
+local spectateContainer, getSpectateState = createToggleButton("Spectate", "View player camera")
+local spectateSelectContainer, getSpectatePlayer = createPlayerSelector("Spectate Player", "Select target")
+local teleportContainer, getTeleportState = createToggleButton("Teleport", "Teleport to player")
+local teleportSelectContainer, getTeleportPlayer = createPlayerSelector("Teleport Player", "Select target")
+local distanceContainer, getDistanceState = createToggleButton("Distance Tracker", "Show player distances")
+
+local highlights = {}
+
+local function applyAura()
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			local hl = Instance.new("Highlight")
+			hl.FillColor = Color3.fromRGB(255, 0, 0)
+			hl.OutlineColor = Color3.fromRGB(255, 0, 0)
+			hl.Parent = plr.Character
+			highlights[plr] = hl
+		end
+	end
+end
+
+local function removeAura()
+	for _, hl in pairs(highlights) do
+		if hl then hl:Destroy() end
+	end
+	highlights = {}
+end
+
+Players.PlayerAdded:Connect(function(newPlayer)
+	if getAuraState() and newPlayer ~= player and newPlayer.Character then
+		local hl = Instance.new("Highlight")
+		hl.FillColor = Color3.fromRGB(255, 0, 0)
+		hl.OutlineColor = Color3.fromRGB(255, 0, 0)
+		hl.Parent = newPlayer.Character
+		highlights[newPlayer] = hl
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(leftPlayer)
+	if highlights[leftPlayer] then
+		highlights[leftPlayer]:Destroy()
+		highlights[leftPlayer] = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if getAuraState() then
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character then
+				if not highlights[plr] then
+					local hl = Instance.new("Highlight")
+					hl.FillColor = Color3.fromRGB(255, 0, 0)
+					hl.OutlineColor = Color3.fromRGB(255, 0, 0)
+					hl.Parent = plr.Character
+					highlights[plr] = hl
+				end
+			end
+		end
+	else
+		removeAura()
+	end
+
+	if getSpectateState() then
+		local target = getSpectatePlayer()
+		if target and target.Character then
+			local hum = target.Character:FindFirstChild("Humanoid")
+			if hum then
+				camera.CameraSubject = hum
+			end
+		end
+	else
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+		end
+	end
+
+	if getTeleportState() then
+		local target = getTeleportPlayer()
+		if target and target.Character and player.Character then
+			local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+			local myhrp = player.Character:FindFirstChild("HumanoidRootPart")
+			if hrp and myhrp then
+				myhrp.CFrame = hrp.CFrame
+			end
+		end
+	end
+
+	if getDistanceState() then
+		local playerGui = player:FindFirstChild("PlayerGui")
+		if playerGui then
+			local distanceLabel = playerGui:FindFirstChild("DistanceLabel")
+			if not distanceLabel then
+				distanceLabel = Instance.new("TextLabel")
+				distanceLabel.Name = "DistanceLabel"
+				distanceLabel.Size = UDim2.new(0, 300, 0, 400)
+				distanceLabel.Position = UDim2.new(0, 10, 0.5, -200)
+				distanceLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+				distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+				distanceLabel.TextScaled = true
+				distanceLabel.TextWrapped = true
+				distanceLabel.Font = Enum.Font.Gotham
+				distanceLabel.Parent = playerGui
+
+				local distanceStroke = Instance.new("UIStroke")
+				distanceStroke.Color = Color3.fromRGB(128, 128, 128)
+				distanceStroke.Thickness = 2
+				distanceStroke.Parent = distanceLabel
+
+				local distanceCorner = Instance.new("UICorner")
+				distanceCorner.CornerRadius = UDim.new(0, 10)
+				distanceCorner.Parent = distanceLabel
+			end
+
+			local distanceText = ""
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local playerPos = player.Character.HumanoidRootPart.Position
+				for _, plr in ipairs(Players:GetPlayers()) do
+					if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+						local distance = (playerPos - plr.Character.HumanoidRootPart.Position).Magnitude
+						distanceText = distanceText .. plr.Name .. " - Distance: " .. math.floor(distance) .. "\n"
+					end
+				end
+			end
+
+			distanceLabel.Text = distanceText
+		end
+	else
+		local playerGui = player:FindFirstChild("PlayerGui")
+		if playerGui then
+			local distanceLabel = playerGui:FindFirstChild("DistanceLabel")
+			if distanceLabel then
+				distanceLabel:Destroy()
+			end
+		end
+	end
+end)
+
+button.MouseButton1Click:Connect(function()
+	menu.Visible = not menu.Visible
+end)
