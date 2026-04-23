@@ -278,9 +278,8 @@ local function createSlider(labelText)
 end
 
 local auraToggle, auraKnob = createToggle("Red Aura")
-local specToggle, specKnob = createToggle("Spectate Player")
-local boxTp, arrowTp, listTp = createSelector()
 local tpToggle, tpKnob = createToggle("Teleport Player")
+local boxTp, arrowTp, listTp = createSelector()
 local distToggle, distKnob = createToggle("Show Distance")
 local crosshairToggle, crosshairKnob = createToggle("Crosshair Circle")
 local crosshairSliderContainer, getCrosshairSize, setCrosshairSize = createSlider("Size")
@@ -302,14 +301,12 @@ local function toggleLogic(toggle, knob)
 end
 
 local auraState = toggleLogic(auraToggle, auraKnob)
-local specState = toggleLogic(specToggle, specKnob)
 local tpState = toggleLogic(tpToggle, tpKnob)
 local distState = toggleLogic(distToggle, distKnob)
 local crosshairState = toggleLogic(crosshairToggle, crosshairKnob)
 local aimbotState = toggleLogic(aimbotToggle, aimbotKnob)
 
 local auraHighlights = {}
-local selectedSpecPlayer = nil
 local selectedTpPlayer = nil
 local distLabels = {}
 local crosshairGui = nil
@@ -433,17 +430,6 @@ RunService.RenderStepped:Connect(function()
 			if hl then hl:Destroy() end
 		end
 		auraHighlights = {}
-	end
-
-	if specState() and selectedSpecPlayer and selectedSpecPlayer.Character then
-		local hum = selectedSpecPlayer.Character:FindFirstChild("Humanoid")
-		if hum then
-			camera.CameraSubject = hum
-		end
-	elseif not specState() and player.Character then
-		if player.Character:FindFirstChild("Humanoid") then
-			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
-		end
 	end
 
 	if tpState() and selectedTpPlayer and selectedTpPlayer.Character and player.Character then
