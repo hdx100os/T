@@ -315,6 +315,7 @@ local selectedTpPlayer = nil
 local distLabels = {}
 local crosshairGui = nil
 local aimbotTarget = nil
+local aimbotCameraDistance = 15
 
 local function fillList(list, box)
 	list:ClearAllChildren()
@@ -436,13 +437,23 @@ end
 local function updateCrosshairSize()
 	if crosshairGui then
 		local size = getCrosshairSize()
+		local scaledSize = size * 5
 		local circle = crosshairGui:FindFirstChild("CrosshairCircle")
 		if circle then
-			circle.Size = UDim2.new(0, size, 0, size)
-			circle.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
+			circle.Size = UDim2.new(0, scaledSize, 0, scaledSize)
+			circle.Position = UDim2.new(0.5, -scaledSize / 2, 0.5, -scaledSize / 2)
 		end
 	end
 end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.W and aimbotState() then
+		aimbotCameraDistance = math.max(5, aimbotCameraDistance - 1)
+	elseif input.KeyCode == Enum.KeyCode.S and aimbotState() then
+		aimbotCameraDistance = math.min(50, aimbotCameraDistance + 1)
+	end
+end)
 
 RunService.RenderStepped:Connect(function()
 	if auraState() then
@@ -469,8 +480,8 @@ RunService.RenderStepped:Connect(function()
 		if hum then
 			camera.CameraSubject = hum
 		end
-	elseif not specState() then
-		if player.Character and player.Character:FindFirstChild("Humanoid") then
+	elseif not specState() and player.Character then
+		if player.Character:FindFirstChild("Humanoid") then
 			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
 		end
 	end
@@ -522,7 +533,7 @@ RunService.RenderStepped:Connect(function()
 		destroyCrosshair()
 	end
 
-	if aimbotState() then
+	if aimbotState() and player.Character then
 		local closestPlayer = nil
 		local closestDistance = math.huge
 
@@ -542,11 +553,11 @@ RunService.RenderStepped:Connect(function()
 		if closestPlayer and closestPlayer.Character then
 			aimbotTarget = closestPlayer
 			local head = closestPlayer.Character:FindFirstChild("Head")
-			if head then
+			if head and player.Character:FindFirstChild("HumanoidRootPart") then
 				local playerHrp = player.Character:FindFirstChild("HumanoidRootPart")
-				if playerHrp then
-					camera.CFrame = CFrame.new(playerHrp.Position + (playerHrp.Position - head.Position).Unit * 5, head.Position)
-				end
+				local direction = (head.Position - playerHrp.Position).Unit
+				local cameraPos = head.Position - direction * aimbotCameraDistance + Vector3.new(0, 3, 0)
+				camera.CFrame = CFrame.new(cameraPos, head.Position)
 			end
 		end
 	else
@@ -571,8 +582,10 @@ Players.PlayerRemoving:Connect(function(leftPlayer)
 	if selectedSpecPlayer == leftPlayer then
 		selectedSpecPlayer = nil
 		boxSpec.Text = ""
-		if specState() then
-			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+		if specState() and player.Character then
+			if player.Character:FindFirstChild("Humanoid") then
+				camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+			end
 		end
 	end
 	if selectedTpPlayer == leftPlayer then
