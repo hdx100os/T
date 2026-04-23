@@ -315,7 +315,7 @@ local selectedTpPlayer = nil
 local distLabels = {}
 local crosshairGui = nil
 local aimbotTarget = nil
-local aimbotCameraDistance = 15
+local aimbotCameraDistance = 5
 
 local function fillList(list, box)
 	list:ClearAllChildren()
@@ -403,8 +403,8 @@ local function createCrosshair()
 
 		local circle = Instance.new("Frame")
 		circle.Name = "CrosshairCircle"
-		circle.Size = UDim2.new(0, 100, 0, 100)
-		circle.Position = UDim2.new(0.5, -50, 0.5, -50)
+		circle.Size = UDim2.new(0, 200, 0, 200)
+		circle.Position = UDim2.new(0.5, -100, 0.5, -100)
 		circle.BackgroundTransparency = 1
 		circle.Parent = crosshairGui
 
@@ -436,24 +436,14 @@ end
 
 local function updateCrosshairSize()
 	if crosshairGui then
-		local size = getCrosshairSize()
-		local scaledSize = size * 5
+		local size = getCrosshairSize() * 2
 		local circle = crosshairGui:FindFirstChild("CrosshairCircle")
 		if circle then
-			circle.Size = UDim2.new(0, scaledSize, 0, scaledSize)
-			circle.Position = UDim2.new(0.5, -scaledSize / 2, 0.5, -scaledSize / 2)
+			circle.Size = UDim2.new(0, size, 0, size)
+			circle.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
 		end
 	end
 end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.W and aimbotState() then
-		aimbotCameraDistance = math.max(5, aimbotCameraDistance - 1)
-	elseif input.KeyCode == Enum.KeyCode.S and aimbotState() then
-		aimbotCameraDistance = math.min(50, aimbotCameraDistance + 1)
-	end
-end)
 
 RunService.RenderStepped:Connect(function()
 	if auraState() then
@@ -475,13 +465,15 @@ RunService.RenderStepped:Connect(function()
 		auraHighlights = {}
 	end
 
-	if specState() and selectedSpecPlayer and selectedSpecPlayer.Character then
-		local hum = selectedSpecPlayer.Character:FindFirstChild("Humanoid")
-		if hum then
-			camera.CameraSubject = hum
+	if specState() then
+		if selectedSpecPlayer and selectedSpecPlayer.Character then
+			local hum = selectedSpecPlayer.Character:FindFirstChild("Humanoid")
+			if hum then
+				camera.CameraSubject = hum
+			end
 		end
-	elseif not specState() and player.Character then
-		if player.Character:FindFirstChild("Humanoid") then
+	else
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
 		end
 	end
@@ -533,7 +525,7 @@ RunService.RenderStepped:Connect(function()
 		destroyCrosshair()
 	end
 
-	if aimbotState() and player.Character then
+	if aimbotState() then
 		local closestPlayer = nil
 		local closestDistance = math.huge
 
@@ -553,17 +545,28 @@ RunService.RenderStepped:Connect(function()
 		if closestPlayer and closestPlayer.Character then
 			aimbotTarget = closestPlayer
 			local head = closestPlayer.Character:FindFirstChild("Head")
-			if head and player.Character:FindFirstChild("HumanoidRootPart") then
-				local playerHrp = player.Character:FindFirstChild("HumanoidRootPart")
-				local direction = (head.Position - playerHrp.Position).Unit
-				local cameraPos = head.Position - direction * aimbotCameraDistance + Vector3.new(0, 3, 0)
-				camera.CFrame = CFrame.new(cameraPos, head.Position)
+			if head and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local playerHrp = player.Character.HumanoidRootPart
+				local directionToHead = (head.Position - playerHrp.Position).Unit
+				local cameraPosition = playerHrp.Position + Vector3.new(0, 2, 0) - directionToHead * aimbotCameraDistance
+				camera.CFrame = CFrame.new(cameraPosition, head.Position)
 			end
 		end
 	else
 		aimbotTarget = nil
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+		end
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if aimbotState() then
+		if input.KeyCode == Enum.KeyCode.W then
+			aimbotCameraDistance = math.max(1, aimbotCameraDistance - 0.5)
+		elseif input.KeyCode == Enum.KeyCode.S then
+			aimbotCameraDistance = aimbotCameraDistance + 0.5
 		end
 	end
 end)
@@ -582,10 +585,8 @@ Players.PlayerRemoving:Connect(function(leftPlayer)
 	if selectedSpecPlayer == leftPlayer then
 		selectedSpecPlayer = nil
 		boxSpec.Text = ""
-		if specState() and player.Character then
-			if player.Character:FindFirstChild("Humanoid") then
-				camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
-			end
+		if not specState() and player.Character and player.Character:FindFirstChild("Humanoid") then
+			camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
 		end
 	end
 	if selectedTpPlayer == leftPlayer then
